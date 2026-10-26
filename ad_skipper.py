@@ -1,31 +1,9 @@
-"""
-Ad skipper, controlled by another macro.
-
-Run it once and leave it running:   python ad_skipper.py
-It sits idle (no screen scanning) until told to start.
-
-CONTROL FROM YOUR MACROS (any one of these)
-  Hotkeys:       F9 = start ad mode      F10 = stop ad mode
-  Command line:  python ad_skipper.py start | stop | toggle | status | quit
-  UDP message:   send the text start / stop / toggle / quit to 127.0.0.1:48765
-
-TEACHING (works any time, even while idle)
-  F2 = save a SMALL icon (X, arrow) under your mouse cursor
-  F3 = save a WIDE button (e.g. "Skip Ad" text) under your mouse cursor
-  F4 = press twice (top-left, then bottom-right) to limit scanning to the game area
-  F8 = quit
-  Emergency stop: slam the mouse into a screen corner.
-
-Templates are saved in ./ad_templates and remembered next time.
-"""
-
 import os
 import sys
 import time
 import glob
 import socket
 import threading
-
 # ---------------- SETTINGS (tweak these) ----------------
 TEMPLATE_DIR = "ad_templates"
 SMALL_SIZE = (48, 48)        # width, height of crop for F2
@@ -38,10 +16,7 @@ AD_TIMEOUT = 120             # safety: auto-stop ad mode after this many seconds
 CONTROL_HOST = "127.0.0.1"
 CONTROL_PORT = 48765
 # --------------------------------------------------------
-
 COMMANDS = {"start", "stop", "toggle", "status", "quit"}
-
-
 # ---------- client mode: python ad_skipper.py start ----------
 if len(sys.argv) > 1:
     cmd = sys.argv[1].lower()
@@ -57,8 +32,6 @@ if len(sys.argv) > 1:
         except socket.timeout:
             print("no response (is ad_skipper.py running?)")
     sys.exit(0)
-
-
 # ---------- server mode ----------
 import cv2
 import numpy as np
@@ -71,11 +44,11 @@ pyautogui.FAILSAFE = True
 
 os.makedirs(TEMPLATE_DIR, exist_ok=True)
 
-ad_mode = threading.Event()      # set = actively hunting for ads
+ad_mode = threading.Event()
 quit_flag = threading.Event()
-region = None                    # physical-pixel dict {left, top, width, height}
+region = None
 region_points = []
-templates = []                   # list of (name, grayscale image)
+templates = []
 lock = threading.Lock()
 ad_started_at = 0.0
 clicks_this_ad = 0
@@ -254,7 +227,7 @@ def main():
     try:
         while not quit_flag.is_set():
             if not ad_mode.is_set():
-                time.sleep(0.1)          # idle: no screenshots, near-zero CPU
+                time.sleep(0.1)
                 continue
 
             if AD_TIMEOUT and time.time() - ad_started_at > AD_TIMEOUT:
@@ -262,7 +235,7 @@ def main():
                 continue
 
             if find_and_click_ad():
-                time.sleep(CLICK_COOLDOWN)   # ads often chain: keep going, don't stop
+                time.sleep(CLICK_COOLDOWN)
             else:
                 time.sleep(SCAN_INTERVAL)
     except pyautogui.FailSafeException:
